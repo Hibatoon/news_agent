@@ -18,10 +18,18 @@ if (!WHATSAPP_ACCESS_TOKEN || !WHATSAPP_PHONE_NUMBER_ID || !WHATSAPP_VERIFY_TOKE
  * @param messageBody - The text content of the reply.
  */
 async function sendWhatsAppMessage(to: string, messageBody: string) {
-    if (!WHATSAPP_ACCESS_TOKEN || !WHATSAPP_PHONE_NUMBER_ID) {
-        console.error("Cannot send message: API credentials not loaded.");
+    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+
+    if (!accessToken || !phoneNumberId) {
+        console.error("❌ CRITICAL: Missing required environment variables.");
         return;
     }
+    
+    // Log the variables being used (ensure the tokens are present, NOT 'undefined')
+    console.log(`Debug: Attempting to send message to ${to}`);
+    // DO NOT LOG THE FULL TOKEN! Only a slice.
+    console.log(`Debug: Using Phone ID: ${phoneNumberId}, Token Start: ${accessToken.substring(0, 5)}...`);
 
     // Always use the latest API version (v24.0 as of now)
     const apiUrl = `https://graph.facebook.com/v24.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;

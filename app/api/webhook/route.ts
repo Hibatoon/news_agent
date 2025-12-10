@@ -21,12 +21,14 @@ export async function GET(request: Request) {
 
 // Vercel Function: POST method for Incoming Messages
 
+import { promises as fs } from 'fs';
+import path from 'path';
+
 export async function POST(request: Request) {
   const body = await request.json();
 
   console.log('Received Webhook Body:', JSON.stringify(body, null, 2));
 
-  // STEP 1: Check the basic structure of the webhook event
   if (
     body.object === 'whatsapp_business_account' &&
     body.entry?.[0]?.changes?.[0]?.value?.messages
@@ -35,29 +37,36 @@ export async function POST(request: Request) {
     const incomingMessage = messageValue.messages[0];
 
     if (incomingMessage) {
-      // Extract key message details (like the sender ID and the message text)
       const senderId = incomingMessage.from;
       const messageType = incomingMessage.type;
       
-      // We are only interested in text messages for now
       if (messageType === 'text') {
         const messageText = incomingMessage.text.body;
+        const timestamp = new Date().toISOString();
 
         console.log(`\n\n🟢 NEW MESSAGE RECEIVED`);
         console.log(`From: ${senderId}`);
         console.log(`Text: ${messageText}`);
 
-        // ------------------------------------------------------------------
-        // STEP 2 (Next Iteration): Process the message logic (AI/News API)
-        // Here you would integrate your Antigravity logic:
-        // const responseText = await antigravity.processMessage(messageText, senderId);
-        // await whatsappAPI.sendTextMessage(senderId, responseText);
-        // ------------------------------------------------------------------
+        // Write to file
+        const logEntry = {
+          timestamp,
+          senderId,
+          messageType,
+          messageText,
+          fullMessage: incomingMessage
+        };
+
+        try {
+          const logFile = path.join(process.cwd(), 'messages.jsonl');
+          await fs.appendFile(logFile, JSON.stringify(logEntry) + '\n');
+          console.log('Message logged to file');
+        } catch (error) {
+          console.error('Error writing to file:', error);
+        }
       }
     }
   }
 
-  // CRUCIAL: Always send an immediate 200 OK response back to WhatsApp
-  // This tells Meta that you received the message and prevents them from retrying.
   return new Response('EVENT_RECEIVED', { status: 200 });
 }
